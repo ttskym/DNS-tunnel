@@ -21,27 +21,53 @@ FILE = []
 NO = []
 
 
-def windows_handler(pkt_window,feat_handler, target_func):
-    for req_res in pkt_window:
+def insert_data(req_res, feat_handler):
+    feat_handler.req_sizes.append(req_res[0].len)
+    feat_handler.res_sizes.append(req_res[1].len)
+    feat_handler.req_times.append(req_res[0].time)
+    feat_handler.res_times.append(req_res[1].time)
+
+    # req_res[0][DNSQR].qname not req_res[0].qname ---> bug fixed
+    tld = tldextract.extract(req_res[0][DNSQR].qname.decode())
+    if tld.subdomain[-4:] == '.abc':
+        subdomain = tld.subdomain[:-4]
+    else:
+        subdomain = tld.subdomain
+    feat_handler.subdomains.append(subdomain)
+
+
+def windows_handler(pkt_window, feat_handler, target_func):
+    if feat_handler.flag == 1:
+        for req_res in pkt_window:
+            try:
+                insert_data(req_res, feat_handler)
+            except Exception as e:
+                print(e)
+
+        # window move 1
+        feat_handler.flag = 0
+    else:
         try:
-            feat_handler.req_sizes.append(req_res[0].len)
-            feat_handler.res_sizes.append(req_res[1].len)
-            feat_handler.req_times.append(req_res[0].time)
-            feat_handler.res_times.append(req_res[1].time)
+            insert_data(pkt_window[-1], feat_handler)
+        except Exception as e:
+            print(e)
 
-            tld = tldextract.extract(req_res[0].qname.decode())
-            if tld.subdomain[-4:] == '.abc':
-                subdomain = tld.subdomain[:-4]
-            else:
-                subdomain = tld.subdomain
-            feat_handler.subdomains.append(subdomain)
-        except:
-            continue
+    try:
+        x = [func() for func in target_func]
+    except Exception as e:
+        print(e)
 
-    x = [func() for func in target_func]
+    # no window move 1
+    # feat_handler.clear()
+    # pkt_window.clear()
 
-    feat_handler.clear()
-    pkt_window.clear()
+    # window move 1
+    try:
+        feat_handler.clear_one()
+    except Exception as e:
+        print(e)
+    pkt_window.popleft()
+
     return x
 
 
@@ -59,9 +85,10 @@ def pcap_parser(file_name, flag):
     interval_req_res_average = feat_handler.interval_req_res_average
 
     target_func = [interval_req_res_average, req_size_var, req_size_average]
+    # target_func = [req_size_var]
 
     window_num = 0
-    pkt_window = []
+    pkt_window = deque()
     req = deque()
     res = dict()
     with PcapReader(file_name) as pkts:
@@ -125,7 +152,7 @@ def pcap_parser(file_name, flag):
 def prepare_data():
     global num_black
     global num_white
-    white_dir = '/home/ljk/data/dataset/10/*'
+    white_dir = '/home/ljk/data/dataset/20/*'
     black_dir = '/home/ljk/pac/iodine/*'
 
     process_list = []
@@ -194,12 +221,12 @@ def valid():
             if pair[0] == 1:
                 FP += 1
     num = len(X)
-    print(num)
+    print("sum: " + str(num))
     print("accuracy: " + str(num_true/num))
-    print("precision: " + str(TP/TP+FP))
+    print("precision: " + str(TP/(TP+FP)))
     print("recall: " + str(TP/num_white))
 
 
 if __name__ == "__main__":
-    train()
-    # valid()
+    # train()
+    valid()

@@ -1,14 +1,16 @@
 import numpy as np
+from collections import deque
 
 
 class Features:
     def __init__(self):
-        self.req_sizes = []
-        self.res_sizes = []
-        self.req_times = []
-        self.res_times = []
-        self.subdomains = []
-        self.intervals = []
+        self.flag = 1
+        self.req_sizes = deque()
+        self.res_sizes = deque()
+        self.req_times = deque()
+        self.res_times = deque()
+        self.subdomains = deque()
+        self.intervals = deque()
 
     def req_size_average(self):
         return np.average(self.req_sizes)
@@ -21,7 +23,11 @@ class Features:
             print("interval")
             exit("interval")
         if len(self.intervals) == 0:
-            self.intervals = [item[1] - item[0] for item in zip(self.req_times, self.res_times)]
+            for item in zip(self.req_times, self.res_times):
+                self.intervals.append(item[1] - item[0])
+            # self.intervals = deque([item[1] - item[0] for item in zip(self.req_times, self.res_times)])
+        elif len(self.intervals) != 20:
+            self.intervals.append(self.res_times[-1] - self.req_times[-1])
         return np.average(self.intervals)
 
     def interval_req_res_var(self):
@@ -29,7 +35,11 @@ class Features:
             print("interval")
             exit("interval")
         if len(self.intervals) == 0:
-            self.intervals = [item[1] - item[0] for item in zip(self.req_times, self.res_times)]
+            for item in zip(self.req_times, self.res_times):
+                self.intervals.append(item[1] - item[0])
+            # self.intervals = deque([item[1] - item[0] for item in zip(self.req_times, self.res_times)])
+        elif len(self.intervals) != 20:
+            self.intervals.append(self.res_times[-1] - self.req_times[-1])
         return np.var(self.intervals)
 
     def character(self):
@@ -50,4 +60,15 @@ class Features:
         self.req_times.clear()
         self.res_times.clear()
         self.subdomains.clear()
-        self.intervals.clear()
+        # intervas is = the data computed not inserted, need to valid  ---> bug fixed
+        if len(self.intervals) != 0:
+            self.intervals.clear()
+
+    def clear_one(self):
+        self.req_sizes.popleft()
+        self.res_sizes.popleft()
+        self.req_times.popleft()
+        self.res_times.popleft()
+        self.subdomains.popleft()
+        if len(self.intervals) != 0:
+            self.intervals.popleft()
