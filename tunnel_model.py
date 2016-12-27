@@ -212,19 +212,19 @@ def valid():
     for pair in result_pair:
         if pair[0] == pair[1]:
             num_true += 1
-            if pair[1] == 1:
+            if pair[1] == 0:
                 TP += 1
         else:
             print(FILE[num_true+num_false] + '---->' + str(NO[num_false + num_true]))
             print(str(X[num_false + num_true]))
             num_false += 1
-            if pair[0] == 1:
+            if pair[0] == 0:
                 FP += 1
     num = len(X)
     print("sum: " + str(num))
     print("accuracy: " + str(num_true/num))
     print("precision: " + str(TP/(TP+FP)))
-    print("recall: " + str(TP/num_white))
+    print("recall: " + str(TP/num_black))
 
 
 if __name__ == "__main__":
