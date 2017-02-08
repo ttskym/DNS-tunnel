@@ -15,7 +15,8 @@ def cmd_generator():
     for domain in data:
         for ip in data[domain]:
             ip_src, ip_dst = ip.split()
-            cmd = 'tshark -r /home/ljk/data/10mindata/10min_00000_20130523142355 -n -2 -R "ip.addr == ' + ip_src + \
+            # no -2
+            cmd = 'tshark -r /home/ljk/data/5mindata/5min_00000_20130523142355 -n -R "ip.addr == ' + ip_src + \
                       ' and ip.addr == ' + ip_dst + ' and dns.qry.name contains "' + domain + '""' \
                       + ' -w ' + dir + domain + '_' + ip_src + '_' + ip_dst +'.pcap'
             cmd_list.append(cmd)
@@ -34,5 +35,6 @@ if __name__ == '__main__':
 
     for a in tmp:
         a.result()
+    # print cmd_list
     # cmd_generator()
     # print(cmd_list)

@@ -38,12 +38,12 @@ def type_json(filename):
                 '2': 'NS',
                 '12': 'PTR',
                 '3': 'MD',
-                '33':'SRV',
+                '33': 'SRV',
                 '6': 'SOA',
                 '255': '*',
                 '0': 'SIG'
                 }
-    with open(filename,'rt') as file:
+    with open(filename, 'rt') as file:
         data = json.load(file)
 
     data = sorted(data.items(), key=lambda a: a[1], reverse=True)

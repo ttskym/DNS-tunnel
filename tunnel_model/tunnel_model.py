@@ -1,16 +1,22 @@
+import numpy as np
+import tldextract
+from collections import deque
 from concurrent.futures import ProcessPoolExecutor
 from scapy.all import *
-from sklearn.linear_model import SGDClassifier
-from collections import deque
 from sklearn.externals import joblib
+from sklearn.linear_model import SGDClassifier
+from sklearn import svm
+from sklearn import tree
 
-from .features import Features
-
-import numpy as np
+from features import Features
 import glob
-import tldextract
 
-window_size = 20
+# configuration
+white_dir = '/home/ljk/dataset/white/valid/*'
+black_dir = '/home/ljk/dataset/black/valid/*'
+window_size = 10
+
+
 num_white = 0
 num_black = 0
 
@@ -26,6 +32,7 @@ def insert_data(req_res, feat_handler):
     feat_handler.res_sizes.append(req_res[1].len)
     feat_handler.req_times.append(req_res[0].time)
     feat_handler.res_times.append(req_res[1].time)
+    feat_handler.query_type.append(str(req_res[0][DNSQR].qtype))
 
     # req_res[0][DNSQR].qname not req_res[0].qname ---> bug fixed
     tld = tldextract.extract(req_res[0][DNSQR].qname.decode())
@@ -54,7 +61,10 @@ def windows_handler(pkt_window, feat_handler, target_func):
 
     try:
         x = [func() for func in target_func]
+        # x.extend(feat_handler.type())
+
     except Exception as e:
+        print('l1')
         print(e)
 
     # no window move 1
@@ -83,8 +93,19 @@ def pcap_parser(file_name, flag):
     req_size_average = feat_handler.req_size_average
     req_size_var = feat_handler.req_size_var
     interval_req_res_average = feat_handler.interval_req_res_average
+    interval_req_res_var = feat_handler.interval_req_res_var
+    entropy_unigram = feat_handler.entropy_unigram
+    entropy_bigram = feat_handler.entropy_bigram
+    entropy_trigram = feat_handler.entropy_trigram
 
-    target_func = [interval_req_res_average, req_size_var, req_size_average]
+    target_func = [interval_req_res_average,
+                   # req_size_var,
+                   # req_size_average,
+                   # interval_req_res_var,
+                   # entropy_unigram,
+                   # entropy_bigram,
+                   # entropy_trigram
+                   ]
     # target_func = [req_size_var]
 
     window_num = 0
@@ -152,8 +173,6 @@ def pcap_parser(file_name, flag):
 def prepare_data():
     global num_black
     global num_white
-    white_dir = '/home/ljk/data/dataset/20/*'
-    black_dir = '/home/ljk/pac/iodine/*'
 
     process_list = []
 
@@ -190,20 +209,25 @@ def prepare_data():
 
 def train():
     prepare_data()
-    clf = SGDClassifier(loss="log")
-    # print("x")
-    # print(X)
-    # print("y")
-    # print(Y)
+    #logisticl regression
+    # clf = SGDClassifier(loss="log")
+    # clf.fit(np.vstack(X), np.array(Y))
 
-    clf.fit(np.vstack(X), np.array(Y))
-    joblib.dump(clf, 'log.pkl')
+    # svm
+    # clf = svm.SVC()
+    # clf.fit(np.vstack(X), np.array(Y))
+    #
+    # Dicision Trees
+    clf = tree.DecisionTreeClassifier()
+    clf = clf.fit(np.vstack(X), np.array(Y))
+
+    joblib.dump(clf, '/home/ljk/model/log.pkl')
     print(len(X))
 
 
 def valid():
     prepare_data()
-    clf = joblib.load('log.pkl')
+    clf = joblib.load('/home/ljk/model/log.pkl')
     result_pair = list(zip(list(clf.predict(X)), Y))
     num_true = 0
     num_false = 0
@@ -215,8 +239,8 @@ def valid():
             if pair[1] == 0:
                 TP += 1
         else:
-            print(FILE[num_true+num_false] + '---->' + str(NO[num_false + num_true]))
-            print(str(X[num_false + num_true]))
+            # print(FILE[num_true+num_false] + '---->' + str(NO[num_false + num_true]))
+            # print(str(X[num_false + num_true]))
             num_false += 1
             if pair[0] == 0:
                 FP += 1

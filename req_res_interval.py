@@ -1,11 +1,13 @@
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plot
+
 from scapy.all import *
 
 import glob
 import heapq
 
 import numpy as np
-import matplotlib.pyplot as plot
-
 
 def req_res_interval(pcap_path):
     counter = 0
@@ -27,9 +29,6 @@ def req_res_interval(pcap_path):
                 else:
                     # dict_req[str(pkt[DNS].id) ] = pkt.time
                     dict_req[str(pkt[DNS].id) + ' ' + str(pkt[UDP].sport)] = pkt.time
-    # print(counter)
-    # counter += len(dict_req)
-    # print(counter)
     top_n = int(len(y_attr) / 10)
     for i in heapq.nlargest(int(top_n / 2), y_attr):
         y_attr.remove(i)
@@ -37,17 +36,7 @@ def req_res_interval(pcap_path):
         y_attr.remove(i)
 
     x_attr = [i+1 for i in range(len(y_attr))]
-    draw_point(os.path.dirname(pcap_path) + '/picture/' + os.path.basename(pcap_path) + '_req_res_interval_pure.png' ,'req_res_interval (s)', x_attr, y_attr)
-
     return compute('res_req_interval', y_attr)
-
-
-def draw_point(fig_name, ylabel, x_attr, y_attr):
-    plot.ylabel(ylabel)
-    plot.plot(x_attr, y_attr, 'r.')
-    plot.savefig(fig_name)
-    plot.clf()
-
 
 def compute(func_name, attr):
     average = np.average(attr)
@@ -58,16 +47,22 @@ def compute(func_name, attr):
     print()
     return average, variance
 
-
+#
 def draw_bar(x, y, x_attr, sizes, name):
+
+    width = 0.25
+    print(x)
     colors = ['red', 'green', 'blue']
     plot.figure(figsize=(14,5))
     for i in range(len(x)):
-        plot.bar(x[i], y[i], width=4, label = sizes[i],facecolor=colors[i])
-        plot.xticks(x[i], x_attr, rotation=0)
+        plot.bar(x[i], y[i], width=width, label = sizes[i],facecolor=colors[i], align='center')
+    x_a = [width+a for a in x[0]]
+    print(x_a)
+    plot.xticks(x_a, x_attr, rotation=0)
 
     plot.legend()
-    plot.savefig('/Users/liujingkun/Exp/dns_tunneling/data/catch_data/exp/picture/'  + name + '_pure.png')
+    # plot.savefig('/Users/liujingkun/Exp/dns_tunneling/data/catch_data/exp/picture/'  + name + '_pure.png')
+    plot.savefig('/home/ljk/pic/'  + name + '_pure.png')
     plot.clf()
 
 # def draw_bar(path_name, x, y):
@@ -118,6 +113,7 @@ def main(args):
     for path in args:
         sizes.append(path.split(r'/')[-2])
         files = glob.glob(path)
+        files = sorted(files)
         y_ave.append(list())
         y_var.append(list())
         for file in files:
@@ -126,11 +122,9 @@ def main(args):
                 print(file)
                 print('-' * 30 + '\r\n')
                 if flag == 0:
-                    x_attr.append('\n'.join(os.path.basename(file).split(r'_')[0:2]))
+                    x_attr.append('\n'.join(os.path.basename(file).split(r'.')[0:1]))
 
                 ave, var = req_res_interval(file)
-                if len(file.split(r'.')) < 3:
-                    ave = ave - 0.0025
                 y_ave[-1].append(ave)
                 y_var[-1].append(var)
         flag = 1
@@ -140,13 +134,12 @@ def main(args):
     for i in range(len(args)):
         x.append(list())
         for j in range(x_num):
-            x[-1].append(3 * i + 20 * j)
-
+            x[-1].append(0.25*i + j)
     draw_bar(x, y_ave, x_attr, sizes, req_res_interval.__name__ + '_ave')
     draw_bar(x, y_var, x_attr, sizes, req_res_interval.__name__ + '_var')
 
 
-    #
+
     # x = []
     # y = {}
     # for path in args:
@@ -154,6 +147,7 @@ def main(args):
     #     size = path.split(r'/')[-2]
     #     y[size] = {}
     #     files = glob.glob(path)
+    #     files = sorted(files)
     #     for file in files:
     #         if file.endswith('.pcap') == False:
     #             continue
@@ -172,15 +166,14 @@ def main(args):
     #     x.append(list())
     #     for j in range(x_num):
     #         x[-1].append(3 * i + 20 * j)
-    #
-    # print(y)
-    # draw_bar('/Users/liujingkun/Exp/dns_tunneling/data/catch_data/exp/picture/', x, y)
+
+    # draw_bar('/home/ljk/pic/', x, y)
 
 
 
 if __name__ == '__main__':
-    paths = ['/Users/liujingkun/Exp/dns_tunneling/data/catch_data/exp/50/*',
-            '/Users/liujingkun/Exp/dns_tunneling/data/catch_data/exp/100/*',
-            '/Users/liujingkun/Exp/dns_tunneling/data/catch_data/exp/1000/*'
+    paths = ['/home/ljk/exp/50/*',
+             '/home/ljk/exp/100/*',
+             '/home/ljk/exp/1000/*'
     ]
     main(paths)
