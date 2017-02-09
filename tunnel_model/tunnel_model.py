@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import tldextract
 from collections import deque
 from concurrent.futures import ProcessPoolExecutor
@@ -12,8 +13,6 @@ from features import Features
 import glob
 
 # configuration
-white_dir = '/home/ljk/dataset/white/train/*'
-black_dir = '/home/ljk/dataset/black/train/*'
 window_size = 10
 
 
@@ -102,15 +101,15 @@ def pcap_parser(file_name, flag):
     entropy_trigram = feat_handler.entropy_trigram
 
     target_func = [
-            interval_req_res_average,
-            interval_req_res_var,
-            #
-            req_size_var,
-            req_size_average,
-            #
-            entropy_unigram,
-            entropy_bigram,
-            entropy_trigram
+            # interval_req_res_average,
+            # interval_req_res_var,
+
+            # req_size_var,
+            # req_size_average,
+
+            # entropy_unigram,
+            # entropy_bigram,
+            # entropy_trigram
                    ]
     # target_func = [req_size_var]
 
@@ -176,14 +175,14 @@ def pcap_parser(file_name, flag):
     return x, y, file, no
 
 
-def prepare_data():
+def prepare_data(path):
     global num_black
     global num_white
 
     process_list = []
 
     with ProcessPoolExecutor() as pool:
-        for file in glob.glob(white_dir):
+        for file in glob.glob(path[0]):
             process_list.append(pool.submit(pcap_parser, file, 1))
         for process in process_list:
             x, y, file, no = process.result()
@@ -199,7 +198,7 @@ def prepare_data():
         # print(Y)
         print('begin black')
     with ProcessPoolExecutor() as pool:
-        for file in glob.glob(black_dir):
+        for file in glob.glob(path[1]):
             process_list.append(pool.submit(pcap_parser, file, 0))
         for process in process_list:
             x, y, file, no = process.result()
@@ -214,25 +213,27 @@ def prepare_data():
 
 
 def train():
-    prepare_data()
+    path = ['/home/ljk/dataset/white/train/*', '/home/ljk/dataset/black/train/*']
+    prepare_data(path)
     # logisticl regression
-    clf = SGDClassifier(loss="log")
-    clf.fit(np.vstack(X), np.array(Y))
+    # clf = SGDClassifier(loss="log")
+    # clf.fit(np.vstack(X), np.array(Y))
 
     # svm
     # clf = svm.SVC()
     # clf.fit(np.vstack(X), np.array(Y))
     #
     # Dicision Trees
-    # clf = tree.DecisionTreeClassifier()
-    # clf = clf.fit(np.vstack(X), np.array(Y))
+    clf = tree.DecisionTreeClassifier()
+    clf = clf.fit(np.vstack(X), np.array(Y))
 
     joblib.dump(clf, '/home/ljk/model/log.pkl')
     print(len(X))
 
 
 def valid():
-    prepare_data()
+    path = ['/home/ljk/dataset/white/valid/*', '/home/ljk/dataset/black/valid/*']
+    prepare_data(path)
     clf = joblib.load('/home/ljk/model/log.pkl')
     result_pair = list(zip(list(clf.predict(X)), Y))
     num_true = 0
@@ -258,5 +259,7 @@ def valid():
 
 
 if __name__ == "__main__":
-    train()
-    # valid()
+    if os.path.exists('/home/ljk/model/log.pkl'):
+        valid()
+    else:
+        train()
