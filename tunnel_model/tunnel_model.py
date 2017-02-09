@@ -12,8 +12,8 @@ from features import Features
 import glob
 
 # configuration
-white_dir = '/home/ljk/dataset/white/valid/*'
-black_dir = '/home/ljk/dataset/black/valid/*'
+white_dir = '/home/ljk/dataset/white/train/*'
+black_dir = '/home/ljk/dataset/black/train/*'
 window_size = 10
 
 
@@ -61,7 +61,10 @@ def windows_handler(pkt_window, feat_handler, target_func):
 
     try:
         x = [func() for func in target_func]
-        # x.extend(feat_handler.type())
+        # type = feat_handler.type()
+        # print(type)
+        # x.extend(type)
+        x.extend(feat_handler.type())
 
     except Exception as e:
         print('l1')
@@ -98,13 +101,16 @@ def pcap_parser(file_name, flag):
     entropy_bigram = feat_handler.entropy_bigram
     entropy_trigram = feat_handler.entropy_trigram
 
-    target_func = [interval_req_res_average,
-                   # req_size_var,
-                   # req_size_average,
-                   # interval_req_res_var,
-                   # entropy_unigram,
-                   # entropy_bigram,
-                   # entropy_trigram
+    target_func = [
+            interval_req_res_average,
+            interval_req_res_var,
+            #
+            req_size_var,
+            req_size_average,
+            #
+            entropy_unigram,
+            entropy_bigram,
+            entropy_trigram
                    ]
     # target_func = [req_size_var]
 
@@ -209,17 +215,17 @@ def prepare_data():
 
 def train():
     prepare_data()
-    #logisticl regression
-    # clf = SGDClassifier(loss="log")
-    # clf.fit(np.vstack(X), np.array(Y))
+    # logisticl regression
+    clf = SGDClassifier(loss="log")
+    clf.fit(np.vstack(X), np.array(Y))
 
     # svm
     # clf = svm.SVC()
     # clf.fit(np.vstack(X), np.array(Y))
     #
     # Dicision Trees
-    clf = tree.DecisionTreeClassifier()
-    clf = clf.fit(np.vstack(X), np.array(Y))
+    # clf = tree.DecisionTreeClassifier()
+    # clf = clf.fit(np.vstack(X), np.array(Y))
 
     joblib.dump(clf, '/home/ljk/model/log.pkl')
     print(len(X))
@@ -239,8 +245,8 @@ def valid():
             if pair[1] == 0:
                 TP += 1
         else:
-            # print(FILE[num_true+num_false] + '---->' + str(NO[num_false + num_true]))
-            # print(str(X[num_false + num_true]))
+            print(FILE[num_true+num_false] + '---->' + str(NO[num_false + num_true]))
+            print(str(X[num_false + num_true]))
             num_false += 1
             if pair[0] == 0:
                 FP += 1
@@ -252,5 +258,5 @@ def valid():
 
 
 if __name__ == "__main__":
-    # train()
-    valid()
+    train()
+    # valid()

@@ -1,4 +1,5 @@
 import numpy as np
+from collections import OrderedDict
 from collections import deque
 from scipy import stats
 
@@ -103,9 +104,12 @@ class Features:
                     '2': 0,
                     '12': 0
                     }
+        # fix-bug: using OrderedDict to ensure the order when iterate the dict
+        dns_type = OrderedDict(sorted(dns_type.items(), key=lambda t: t[0]))
         for code in self.query_type:
             if code in dns_type:
                 dns_type[code] += 1
+        # print(dns_type)
         return [dns_type[key]/len(self.query_type) for key in dns_type]
 
     def clear(self):
